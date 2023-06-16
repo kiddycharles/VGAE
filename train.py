@@ -15,7 +15,7 @@ import model
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
-adj, features = load_data(args.dataset)
+adj, features, labels = load_data(args.dataset)
 
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj
@@ -51,12 +51,17 @@ features = torch.sparse.FloatTensor(torch.LongTensor(features[0].T),
                                     torch.FloatTensor(features[1]),
                                     torch.Size(features[2]))
 
+
+labels = torch.FloatTensor(labels)
+
 weight_mask = adj_label.to_dense().view(-1) == 1
 weight_tensor = torch.ones(weight_mask.size(0))
 weight_tensor[weight_mask] = pos_weight
 
 # init model and optimizer
+
 model = getattr(model, args.model)(adj_norm)
+
 optimizer = Adam(model.parameters(), lr=args.learning_rate)
 
 
@@ -97,11 +102,14 @@ def get_acc(adj_rec, adj_label):
 # train model
 for epoch in range(args.num_epoch):
     t = time.time()
-
-    A_pred = model(features)
+    if args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7':
+        A_pred = model(features, labels)
+    else:
+        A_pred = model(features)
+    # print(A_pred)
     optimizer.zero_grad()
     loss = log_lik = norm * F.binary_cross_entropy(A_pred.view(-1), adj_label.to_dense().view(-1), weight=weight_tensor)
-    if args.model == 'VGAE':
+    if args.model == 'VGAE' or args.model == 'VGAE2' or args.model == 'VGAE3' or args.model == 'VGAE4' or args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7':
         kl_divergence = 0.5 / A_pred.size(0) * (
                     1 + 2 * model.logstd - model.mean ** 2 - torch.exp(model.logstd) ** 2).sum(1).mean()
         loss -= kl_divergence
@@ -120,3 +128,14 @@ for epoch in range(args.num_epoch):
 test_roc, test_ap = get_scores(test_edges, test_edges_false, A_pred)
 print("End of training!", "test_roc=", "{:.5f}".format(test_roc),
       "test_ap=", "{:.5f}".format(test_ap))
+
+# test_roc= 0.89828 test_ap= 0.91207  # VGAE
+# test_roc= 0.91761 test_ap= 0.92399  # VGAE
+# test_roc= 0.91393 test_ap= 0.92200  # VGAE
+# test_roc= 0.86154 test_ap= 0.89462  # VGAE2
+# test_roc= 0.90733 test_ap= 0.90612  # VGAE3
+# test_roc= 0.90623 test_ap= 0.91093  #
+# test_roc= 0.90726 test_ap= 0.90467  # softmax + ReLU
+# test_roc= 0.93413 test_ap= 0.92517  # VGAE4
+# test_roc= 0.91566 test_ap= 0.91749  # VGAE5
+# test_roc= 0.92493 test_ap= 0.92690  # VGAE6
