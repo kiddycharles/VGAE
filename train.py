@@ -15,6 +15,18 @@ import model
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
+# Format the string
+output_string = "new_dataset='{}'\nnew_model='{}'\nnew_input_dim={}\nnew_hidden1_dim={}\nnew_hidden2_dim={" \
+                "}\nnew_hidden3_dim={}\nnew_num_class={}\nnew_use_feature={}\nnew_num_epoch={}\nnew_learning_rate={" \
+                "}".format(
+    args.dataset, args.model, args.input_dim, args.hidden1_dim, args.hidden2_dim, args.hidden3_dim, args.num_class,
+    args.use_feature, args.num_epoch, args.learning_rate
+)
+
+# Print the formatted string
+print('\033[91m' + output_string + '\033[0m')
+
+
 adj, features, labels = load_data(args.dataset)
 
 # Store original adjacency matrix (without diagonal entries) for later
@@ -50,7 +62,6 @@ adj_label = torch.sparse.FloatTensor(torch.LongTensor(adj_label[0].T),
 features = torch.sparse.FloatTensor(torch.LongTensor(features[0].T),
                                     torch.FloatTensor(features[1]),
                                     torch.Size(features[2]))
-
 
 labels = torch.FloatTensor(labels)
 
@@ -109,9 +120,10 @@ for epoch in range(args.num_epoch):
     optimizer.zero_grad()
     loss = log_lik = norm * F.binary_cross_entropy(A_pred.view(-1), adj_label.to_dense().view(-1), weight=weight_tensor)
     if args.model == 'VGAE' or args.model == 'VGAE2' or args.model == 'VGAE3' or args.model == 'VGAE4' \
-            or args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7' or args.model == 'VGAE8' or args.model == 'VGAE9':
+            or args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7' or args.model == 'VGAE8' or \
+            args.model == 'VGAE9' or args.model == 'EnsembleVGAE' or args.model == 'VDGAE':
         kl_divergence = 0.5 / A_pred.size(0) * (
-                    1 + 2 * model.logstd - model.mean ** 2 - torch.exp(model.logstd) ** 2).sum(1).mean()
+                1 + 2 * model.logstd - model.mean ** 2 - torch.exp(model.logstd) ** 2).sum(1).mean()
         loss -= kl_divergence
 
     loss.backward()
@@ -129,7 +141,6 @@ test_roc, test_ap = get_scores(test_edges, test_edges_false, A_pred)
 print("End of training!", "test_roc=", "{:.5f}".format(test_roc),
       "test_ap=", "{:.5f}".format(test_ap))
 
-
 # test_roc= 0.91393 test_ap= 0.92200  # VGAE   # VGAE original
 # test_roc= 0.91186 test_ap= 0.91673  # VGAE2  # GCN + 2 layer MLP decoder
 # test_roc= 0.90733 test_ap= 0.90612  # VGAE3  # GCN + 3 layer MLP decoder
@@ -138,3 +149,7 @@ print("End of training!", "test_roc=", "{:.5f}".format(test_roc),
 # test_roc= 0.92493 test_ap= 0.92690  # VGAE6  # late concatenation + GCN
 # test_roc= 0.92642 test_ap= 0.92562  # VGAE7  # late concatenation + GAT
 # test_roc= 0.91564 test_ap= 0.91889  # VGAE8  # early concatenation + GAT
+
+
+# PubMed
+# test_roc= 0.93873 test_ap= 0.94236 # VGAE
