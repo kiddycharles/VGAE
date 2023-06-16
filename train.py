@@ -59,7 +59,6 @@ weight_tensor = torch.ones(weight_mask.size(0))
 weight_tensor[weight_mask] = pos_weight
 
 # init model and optimizer
-
 model = getattr(model, args.model)(adj_norm)
 
 optimizer = Adam(model.parameters(), lr=args.learning_rate)
@@ -102,14 +101,15 @@ def get_acc(adj_rec, adj_label):
 # train model
 for epoch in range(args.num_epoch):
     t = time.time()
-    if args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7':
+    if args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7' or args.model == 'VGAE8' or args.model == 'VGAE9':
         A_pred = model(features, labels)
     else:
         A_pred = model(features)
     # print(A_pred)
     optimizer.zero_grad()
     loss = log_lik = norm * F.binary_cross_entropy(A_pred.view(-1), adj_label.to_dense().view(-1), weight=weight_tensor)
-    if args.model == 'VGAE' or args.model == 'VGAE2' or args.model == 'VGAE3' or args.model == 'VGAE4' or args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7':
+    if args.model == 'VGAE' or args.model == 'VGAE2' or args.model == 'VGAE3' or args.model == 'VGAE4' \
+            or args.model == 'VGAE5' or args.model == 'VGAE6' or args.model == 'VGAE7' or args.model == 'VGAE8' or args.model == 'VGAE9':
         kl_divergence = 0.5 / A_pred.size(0) * (
                     1 + 2 * model.logstd - model.mean ** 2 - torch.exp(model.logstd) ** 2).sum(1).mean()
         loss -= kl_divergence
@@ -129,13 +129,12 @@ test_roc, test_ap = get_scores(test_edges, test_edges_false, A_pred)
 print("End of training!", "test_roc=", "{:.5f}".format(test_roc),
       "test_ap=", "{:.5f}".format(test_ap))
 
-# test_roc= 0.89828 test_ap= 0.91207  # VGAE
-# test_roc= 0.91761 test_ap= 0.92399  # VGAE
-# test_roc= 0.91393 test_ap= 0.92200  # VGAE
-# test_roc= 0.86154 test_ap= 0.89462  # VGAE2
-# test_roc= 0.90733 test_ap= 0.90612  # VGAE3
-# test_roc= 0.90623 test_ap= 0.91093  #
-# test_roc= 0.90726 test_ap= 0.90467  # softmax + ReLU
-# test_roc= 0.93413 test_ap= 0.92517  # VGAE4
-# test_roc= 0.91566 test_ap= 0.91749  # VGAE5
-# test_roc= 0.92493 test_ap= 0.92690  # VGAE6
+
+# test_roc= 0.91393 test_ap= 0.92200  # VGAE   # VGAE original
+# test_roc= 0.91186 test_ap= 0.91673  # VGAE2  # GCN + 2 layer MLP decoder
+# test_roc= 0.90733 test_ap= 0.90612  # VGAE3  # GCN + 3 layer MLP decoder
+# test_roc= 0.93413 test_ap= 0.92517  # VGAE4  # GAT only
+# test_roc= 0.91566 test_ap= 0.91749  # VGAE5  # early concatenation + GCN
+# test_roc= 0.92493 test_ap= 0.92690  # VGAE6  # late concatenation + GCN
+# test_roc= 0.92642 test_ap= 0.92562  # VGAE7  # late concatenation + GAT
+# test_roc= 0.91564 test_ap= 0.91889  # VGAE8  # early concatenation + GAT

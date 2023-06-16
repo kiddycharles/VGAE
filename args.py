@@ -1,6 +1,6 @@
 ### CONFIGS ###
 dataset = 'cora'
-model = 'VGAE7'
+model = 'VGAE4'
 
 input_dim = 1433 
 hidden1_dim = 32
