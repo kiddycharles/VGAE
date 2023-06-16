@@ -1,25 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import os
 import numpy as np
-import torch.sparse as sparse
-
-import args
 
 
 class VGAE(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
+        self.base_gcn = GraphConvSparse(input_dim, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.gcn_logstddev = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X):
         hidden = self.base_gcn(X)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -30,22 +30,26 @@ class VGAE(nn.Module):
 
 
 class VGAE2(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE2, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.fc1 = nn.Linear(args.hidden2_dim, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
+        self.base_gcn = GraphConvSparse(input_dim, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.gcn_logstddev = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.fc1 = nn.Linear(hidden2_dim, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X):
         hidden = self.base_gcn(X)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -57,24 +61,28 @@ class VGAE2(nn.Module):
 
 
 class VGAE3(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE3, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.fc1 = nn.Linear(args.hidden2_dim, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, args.input_dim)
-        self.fc3 = nn.Linear(args.input_dim, adj.shape[0])
+        self.base_gcn = GraphConvSparse(input_dim, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.gcn_logstddev = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.fc1 = nn.Linear(hidden2_dim, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, input_dim)
+        self.fc3 = nn.Linear(input_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X):
         hidden = self.base_gcn(X)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -87,24 +95,28 @@ class VGAE3(nn.Module):
 
 
 class VGAE4(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE4, self).__init__()
-        self.base_gcn = GraphAttentionLayer(args.input_dim, args.hidden1_dim, adj, dropout=0, alpha=0.2)
-        self.gcn_mean = GraphAttentionLayer(args.hidden1_dim, args.hidden2_dim, adj, dropout=0, alpha=0.2)
-        self.gcn_logstddev = GraphAttentionLayer(args.hidden1_dim, args.hidden2_dim, adj, dropout=0, alpha=0.2)
-        self.fc1 = nn.Linear(args.hidden2_dim, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, args.input_dim)
-        self.fc3 = nn.Linear(args.input_dim, adj.shape[0])
+        self.base_gcn = GraphAttentionLayer(input_dim, hidden1_dim, adj, dropout=dropout, alpha=alpha)
+        self.gcn_mean = GraphAttentionLayer(hidden1_dim, hidden2_dim, adj, dropout=dropout, alpha=alpha)
+        self.gcn_logstddev = GraphAttentionLayer(hidden1_dim, hidden2_dim, adj, dropout=dropout, alpha=alpha)
+        self.fc1 = nn.Linear(hidden2_dim, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, input_dim)
+        self.fc3 = nn.Linear(input_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
         self.softmax = nn.Softmax()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X):
         hidden = self.base_gcn(X)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -114,29 +126,31 @@ class VGAE4(nn.Module):
         Z = self.relu(self.fc2(Z))
         A_pred = self.sigmoid(self.fc3(Z))
         return A_pred
-        # A_pred = dot_product_decode(Z)
-        # return A_pred
 
 
 class VGAE5(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE5, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim + args.num_class, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
-        self.fc1 = nn.Linear(args.hidden2_dim + args.num_class, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
+        self.base_gcn = GraphConvSparse(input_dim + num_class, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.gcn_logstddev = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
+        self.fc1 = nn.Linear(hidden2_dim + num_class, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.elu = nn.ELU()
         self.sigmoid = nn.Sigmoid()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X, Y):
         X = torch.cat([X.to_dense(), Y], dim=1)
         hidden = self.base_gcn(X)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -149,26 +163,30 @@ class VGAE5(nn.Module):
 
 
 class VGAE6(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE6, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim + args.num_class, args.hidden2_dim, adj,
+        self.base_gcn = GraphConvSparse(input_dim, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim + num_class, hidden2_dim, adj,
                                         activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden1_dim + args.num_class, args.hidden2_dim, adj,
+        self.gcn_logstddev = GraphConvSparse(hidden1_dim + num_class, hidden2_dim, adj,
                                              activation=lambda x: x)
-        self.fc1 = nn.Linear(args.hidden2_dim + args.num_class, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
+        self.fc1 = nn.Linear(hidden2_dim + num_class, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.elu = nn.ELU()
         self.sigmoid = nn.Sigmoid()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X, Y):
         hidden = self.base_gcn(X)
         hidden = torch.cat([hidden, Y], dim=1)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -181,26 +199,29 @@ class VGAE6(nn.Module):
 
 
 class VGAE7(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE7, self).__init__()
-        self.base_gcn = GraphAttentionLayer(args.input_dim, args.hidden1_dim, adj, dropout=0, alpha=0.2)
-        self.gcn_mean = GraphAttentionLayer(args.hidden1_dim + args.num_class, args.hidden2_dim, adj, dropout=0,
-                                            alpha=0.2)
-        self.gcn_logstddev = GraphAttentionLayer(args.hidden1_dim + args.num_class, args.hidden2_dim, adj, dropout=0,
-                                                 alpha=0.2)
-        self.fc1 = nn.Linear(args.hidden2_dim + args.num_class, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
+        self.base_gcn = GraphAttentionLayer(input_dim, hidden1_dim, adj, dropout=dropout, alpha=alpha)
+        self.gcn_mean = GraphAttentionLayer(hidden1_dim + num_class, hidden2_dim, adj, dropout=dropout, alpha=alpha)
+        self.gcn_logstddev = GraphAttentionLayer(hidden1_dim + num_class, hidden2_dim, adj, dropout=dropout,
+                                                 alpha=alpha)
+        self.fc1 = nn.Linear(hidden2_dim + num_class, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.elu = nn.ELU()
         self.sigmoid = nn.Sigmoid()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X, Y):
         hidden = self.base_gcn(X)
         hidden = torch.cat([hidden, Y], dim=1)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -213,25 +234,28 @@ class VGAE7(nn.Module):
 
 
 class VGAE8(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(VGAE8, self).__init__()
-        self.base_gcn = GraphAttentionLayer(args.input_dim + args.num_class, args.hidden1_dim, adj, dropout=0,
-                                            alpha=0.2)
-        self.gcn_mean = GraphAttentionLayer(args.hidden1_dim, args.hidden2_dim, adj, dropout=0, alpha=0.2)
-        self.gcn_logstddev = GraphAttentionLayer(args.hidden1_dim, args.hidden2_dim, adj, dropout=0, alpha=0.2)
-        self.fc1 = nn.Linear(args.hidden2_dim + args.num_class, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
+        self.base_gcn = GraphAttentionLayer(input_dim + num_class, hidden1_dim, adj, dropout=dropout, alpha=alpha)
+        self.gcn_mean = GraphAttentionLayer(hidden1_dim, hidden2_dim, adj, dropout=dropout, alpha=alpha)
+        self.gcn_logstddev = GraphAttentionLayer(hidden1_dim, hidden2_dim, adj, dropout=dropout, alpha=alpha)
+        self.fc1 = nn.Linear(hidden2_dim + num_class, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.elu = nn.ELU()
         self.sigmoid = nn.Sigmoid()
+        self.hidden2_dim = hidden2_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X, Y):
         X = torch.cat([X.to_dense(), Y], dim=1)
         hidden = self.base_gcn(X)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -243,76 +267,24 @@ class VGAE8(nn.Module):
         return A_pred
 
 
-class EnsembleVGAE(nn.Module):
-    def __init__(self, adj, layers=2):
-        super(EnsembleVGAE, self).__init__()
+class VGAE9(nn.Module):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
+        super(VGAE9, self).__init__()
+        self.base_gcn = GraphConvSparse(input_dim + num_class, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim + num_class, hidden2_dim, adj,
+                                        activation=lambda x: x)
+        self.gcn_logstddev = GraphConvSparse(hidden1_dim + num_class, hidden2_dim, adj,
+                                             activation=lambda x: x)
+        self.fc1 = nn.Linear(hidden2_dim + num_class, hidden1_dim)
+        self.fc2 = nn.Linear(hidden1_dim, adj.shape[0])
+        self.leaky = nn.LeakyReLU()
+        self.relu = nn.ReLU()
+        self.elu = nn.ELU()
+        self.sigmoid = nn.Sigmoid()
+        self.hidden2_dim = hidden2_dim
         self.mean = None
         self.logstd = None
-        adjacency_matrices = [adj] * layers
-        self.layers = layers
-        for i in range(self.layers - 1):
-            adjacency_matrices[i + 1] = torch.sparse.mm(adjacency_matrices[i], adjacency_matrices[i + 1])
-        self.adjacency_matrix = adjacency_matrices
-        self.base_gcns = []
-        self.gcn_means = []
-        self.gcn_logstddevs = []
-        for i in range(self.layers):
-            base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, self.adjacency_matrix[i])
-            gcn_mean = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, self.adjacency_matrix[i],
-                                       activation=lambda x: x)
-            gcn_logstddev = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, self.adjacency_matrix[i],
-                                            activation=lambda x: x)
-            self.base_gcns.append(base_gcn)
-            self.gcn_means.append(gcn_mean)
-            self.gcn_logstddevs.append(gcn_logstddev)
-
-        self.fc1 = nn.Linear(args.hidden2_dim, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
-        self.leaky = nn.LeakyReLU()
-        self.relu = nn.ReLU()
-        self.elu = nn.ELU()
-        self.sigmoid = nn.Sigmoid()
-
-    def encode(self, X):
-        sample_zs = []
-        sample_z_means = []
-        sample_z_logstds = []
-        for i in range(self.layers):
-            hidden = self.base_gcns[i](X)
-            mean = self.gcn_means[i](hidden)
-            logstd = self.gcn_logstddevs[i](hidden)
-            gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
-            sampled_z = gaussian_noise * torch.exp(logstd) + mean
-            sample_zs.append(sampled_z)
-            sample_z_means.append(mean)
-            sample_z_logstds.append(logstd)
-        self.logstd = torch.stack(sample_z_logstds).sum(0)/ len(sample_z_logstds)
-        self.mean = torch.stack(sample_z_means).sum(0) / len(sample_z_means)
-        z = torch.stack(sample_zs).sum(0) / len(sample_zs)
-        return z
-
-    def forward(self, X):
-        Z = self.encode(X)
-        # Z = torch.cat([Z, Y], dim=1)
-        Z = self.relu(self.fc1(Z))
-        A_pred = self.sigmoid(self.fc2(Z))
-        return A_pred
-
-
-class VGAE9(nn.Module):
-    def __init__(self, adj):
-        super(VGAE9, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim + args.num_class, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim + args.num_class, args.hidden2_dim, adj,
-                                        activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden1_dim + args.num_class, args.hidden2_dim, adj,
-                                             activation=lambda x: x)
-        self.fc1 = nn.Linear(args.hidden2_dim + args.num_class, args.hidden1_dim)
-        self.fc2 = nn.Linear(args.hidden1_dim, adj.shape[0])
-        self.leaky = nn.LeakyReLU()
-        self.relu = nn.ReLU()
-        self.elu = nn.ELU()
-        self.sigmoid = nn.Sigmoid()
 
     def encode(self, X, Y):
         X = torch.cat([X.to_dense(), Y], dim=1)
@@ -320,7 +292,7 @@ class VGAE9(nn.Module):
         hidden = torch.cat([hidden, Y], dim=1)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden2_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden2_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -333,25 +305,28 @@ class VGAE9(nn.Module):
 
 
 class VDGAE(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim, num_class=None, alpha=None, dropout=0.0):
         super(VDGAE, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, adj)
-        self.base_gcn2 = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden2_dim, args.hidden3_dim, adj, activation=lambda x: x)
-        self.gcn_logstddev = GraphConvSparse(args.hidden2_dim, args.hidden3_dim, adj, activation=lambda x: x)
-        self.fc1 = nn.Linear(args.hidden3_dim, args.hidden2_dim)
-        self.fc2 = nn.Linear(args.hidden2_dim, args.hidden1_dim)
-        self.fc3 = nn.Linear(args.hidden1_dim, adj.shape[0])
+        self.base_gcn = GraphConvSparse(input_dim, hidden1_dim, adj)
+        self.base_gcn2 = GraphConvSparse(hidden1_dim, hidden2_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden2_dim, hidden3_dim, adj, activation=lambda x: x)
+        self.gcn_logstddev = GraphConvSparse(hidden2_dim, hidden3_dim, adj, activation=lambda x: x)
+        self.fc1 = nn.Linear(hidden3_dim, hidden2_dim)
+        self.fc2 = nn.Linear(hidden2_dim, hidden1_dim)
+        self.fc3 = nn.Linear(hidden1_dim, adj.shape[0])
         self.leaky = nn.LeakyReLU()
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
+        self.hidden3_dim = hidden3_dim
+        self.mean = None
+        self.logstd = None
 
     def encode(self, X):
         hidden = self.base_gcn(X)
         hidden = self.base_gcn2(hidden)
         self.mean = self.gcn_mean(hidden)
         self.logstd = self.gcn_logstddev(hidden)
-        gaussian_noise = torch.randn(X.size(0), args.hidden3_dim)
+        gaussian_noise = torch.randn(X.size(0), self.hidden3_dim)
         sampled_z = gaussian_noise * torch.exp(self.logstd) + self.mean
         return sampled_z
 
@@ -390,10 +365,11 @@ def glorot_init(input_dim, output_dim):
 
 
 class GAE(nn.Module):
-    def __init__(self, adj):
+    def __init__(self, adj, input_dim, hidden1_dim, hidden2_dim, hidden3_dim=None, num_class=None, alpha=None,
+                 dropout=0.0):
         super(GAE, self).__init__()
-        self.base_gcn = GraphConvSparse(args.input_dim, args.hidden1_dim, adj)
-        self.gcn_mean = GraphConvSparse(args.hidden1_dim, args.hidden2_dim, adj, activation=lambda x: x)
+        self.base_gcn = GraphConvSparse(input_dim, hidden1_dim, adj)
+        self.gcn_mean = GraphConvSparse(hidden1_dim, hidden2_dim, adj, activation=lambda x: x)
 
     def encode(self, X):
         hidden = self.base_gcn(X)
