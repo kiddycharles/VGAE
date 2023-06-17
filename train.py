@@ -31,7 +31,7 @@ parser.add_argument('--num_epoch', type=int, default=200, help='Number of epochs
 parser.add_argument('--learning_rate', type=float, default=0.01, help='Learning rate')
 parser.add_argument('--alpha', type=float, default=0.5, help='Alpha')
 parser.add_argument('--dropout', type=float, default=0.0, help='Drop out probability')
-
+parser.add_argument('--device', type=str, default='cuda', help='CUDA')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -109,10 +109,10 @@ module = importlib.import_module('model')
 adj_originate = convert_scipy_csr_to_sparse_tensor(adj_originate)
 if args.model == 'VGAE4v2' or args.model == 'VGAE7':
     existing_model = getattr(module, args.model)(adj_originate, args.input_dim, args.hidden1_dim, args.hidden2_dim,
-                                                 args.hidden3_dim, args.num_class, args.alpha, args.dropout)
+                                                 args.hidden3_dim, args.num_class, args.alpha, args.dropout).to(args.device)
 else:
     existing_model = getattr(module, args.model)(adj_norm, args.input_dim, args.hidden1_dim, args.hidden2_dim,
-                                                 args.hidden3_dim, args.num_class, args.alpha, args.dropout)
+                                                 args.hidden3_dim, args.num_class, args.alpha, args.dropout).to(args.device)
 
 optimizer = Adam(existing_model.parameters(), lr=args.learning_rate)
 
@@ -197,16 +197,16 @@ model_results['test_ap'] = test_ap
 model_results['val_rocs'] = val_rocs
 model_results['val_aps'] = val_aps
 # Directory path
-directory = "results"
+directory = "results_"
 
 
 model_directory = os.path.join(directory, args.model)
-# Assuming `model_results` is your dictionary with model results
+# Assuming `model_results` is your dictionary with model results_
 # Create the directory if it doesn't exist
 if not os.path.exists(model_directory):
     os.makedirs(model_directory, exist_ok=True)
 
-# Save the results as a JSON file in the model subdirectory
+# Save the results_ as a JSON file in the model subdirectory
 result_path = os.path.join(model_directory, "result.json")
 with open(result_path, "w") as file:
     json.dump(model_results, file)

@@ -29,7 +29,7 @@ def preprocess_graph(adj):
 
 def mask_test_edges(adj):
     # Function to build test set with 10% positive links
-    # NOTE: Splits are randomized and results might slightly deviate from reported numbers in the paper.
+    # NOTE: Splits are randomized and results_ might slightly deviate from reported numbers in the paper.
     # TODO: Clean up.
 
     # Remove diagonal elements
