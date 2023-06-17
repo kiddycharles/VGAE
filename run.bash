@@ -12,7 +12,7 @@ python3 train.py --dataset cora --model VGAE7 --input_dim 1433 --num_class 7
 python3 train.py --dataset cora --model VGAE8 --input_dim 1433 --num_class 7
 python3 train.py --dataset cora --model VGAE9 --input_dim 1433 --num_class 7
 python3 train.py --dataset cora --model VDGAE --input_dim 1433 --num_class 7
-
+python3 train.py --dataset cora --model VGAE4v2 --input_dim 1433 --num_class 7
 
 
 # input_dim = 500

@@ -62,7 +62,6 @@ print(f"Loaded variables:\n"
       f"learning_rate: {learning_rate}")
 
 adj, features, labels = load_data(args.dataset)
-
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj
 adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
@@ -103,12 +102,17 @@ weight_mask = adj_label.to_dense().view(-1) == 1
 weight_tensor = torch.ones(weight_mask.size(0))
 weight_tensor[weight_mask] = pos_weight
 
-
+adj_originate = adj_orig + sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
 # Import the module dynamically based on the model name
 module = importlib.import_module('model')
 # init model and optimizer
-existing_model = getattr(module, args.model)(adj_norm, args.input_dim, args.hidden1_dim, args.hidden2_dim,
-                                             args.hidden3_dim, args.num_class, args.alpha, args.dropout)
+adj_originate = convert_scipy_csr_to_sparse_tensor(adj_originate)
+if args.model == 'VGAE4v2' or args.model == 'VGAE7':
+    existing_model = getattr(module, args.model)(adj_originate, args.input_dim, args.hidden1_dim, args.hidden2_dim,
+                                                 args.hidden3_dim, args.num_class, args.alpha, args.dropout)
+else:
+    existing_model = getattr(module, args.model)(adj_norm, args.input_dim, args.hidden1_dim, args.hidden2_dim,
+                                                 args.hidden3_dim, args.num_class, args.alpha, args.dropout)
 
 optimizer = Adam(existing_model.parameters(), lr=args.learning_rate)
 
