@@ -31,7 +31,7 @@ parser.add_argument('--num_epoch', type=int, default=200, help='Number of epochs
 parser.add_argument('--learning_rate', type=float, default=0.01, help='Learning rate')
 parser.add_argument('--alpha', type=float, default=0.5, help='Alpha')
 parser.add_argument('--dropout', type=float, default=0.0, help='Drop out probability')
-parser.add_argument('--device', type=str, default='cuda', help='CUDA')
+parser.add_argument('--device', type=str, default='cpu', help='CUDA')
 
 # Parse the arguments
 args = parser.parse_args()
